@@ -10,3 +10,4 @@
 ```
 2. Installed dependencies with `npm install`
 3. Installed Vuex `npm install vuex@next`
+4. Removed placeholders in `./src/components/`
