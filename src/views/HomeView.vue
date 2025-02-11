@@ -10,9 +10,11 @@ import ImageEditor from '../components/ImageEditor.vue'
 
 <style scoped>
 main {
-  width: 100%;
+  width: 100vw;
   height: 100vh;
   display: flex;
+  padding: 0;
+  margin: 0;
   align-items: center;
   justify-content: center;
 }
