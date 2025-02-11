@@ -1,9 +1,14 @@
 <script setup>
-import TheWelcome from '../components/TheWelcome.vue'
+import ImageEditor from '../components/ImageEditor.vue'
 </script>
 
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+  <ImageEditor />
 </template>
+
+<style>
+main {
+  width: 100%;
+  height: 100vh;
+}
+</style>
