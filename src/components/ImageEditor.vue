@@ -33,10 +33,17 @@
         >
           Save
         </button>
+        <button
+          v-if="hasImage"
+          @click="resetView"
+          title="Reset view to fit image"
+        >
+          Reset View
+        </button>
       </div>
 
       <div class="scale-control">
-        <input type="range" v-model="scale" min="0.1" max="3" step="0.1" />
+        <input type="range" v-model="scale" min="0.1" max="3" step="0.1" @change="drawImage" />
         <span>{{ Math.round(scale * 100) }}%</span>
       </div>
     </div>
@@ -116,22 +123,39 @@ export default {
   components: { ResizeModal },
   
   setup() {
-    // Core refs
     const canvas = ref(null)
     const ctx = ref(null)
     const image = ref(null)
     const imageWidth = ref(0)
     const imageHeight = ref(0)
     
-    // UI state
+    // состояние интерфейса
     const scale = ref(1)
     const activeTool = ref('eyedropper')
     const showResizeModal = ref(false)
     const isDragging = ref(false)
     const offset = ref({ x: 0, y: 0 })
     const lastPos = ref({ x: 0, y: 0 })
+
+    const resetView = () => {
+      if (!image.value || !canvas.value) return
+      
+      const container = canvas.value.parentElement
+      const containerRatio = container.clientWidth / container.clientHeight
+      const imageRatio = imageWidth.value / imageHeight.value
+      
+      // Calculate scale to fit image within container with 50px margin
+      const marginScale = 0.9 // Factor to add margin
+      if (imageRatio > containerRatio) {
+        scale.value = (container.clientWidth / imageWidth.value) * marginScale
+      } else {
+        scale.value = (container.clientHeight / imageHeight.value) * marginScale
+      }
+      
+      offset.value = { x: 0, y: 0 }
+      drawImage()
+    }
     
-    // Color info
     const selectedColor = ref(null)
     const colorSpaces = ref(null)
     const secondColor = ref(null);
@@ -152,10 +176,9 @@ export default {
       canvas.value.width = container.clientWidth
       canvas.value.height = container.clientHeight
       
-      // Center the image
-      const centerX = (canvas.value.width - imageWidth.value * scale.value) / 2
-      const centerY = (canvas.value.height - imageHeight.value * scale.value) / 2
-      
+      // Center the image (remove subtraction of offset)
+      const centerX = (canvas.value.width - imageWidth.value * scale.value) / 2;
+      const centerY = (canvas.value.height - imageHeight.value * scale.value) / 2;
       ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height)
       ctx.value.save()
       ctx.value.translate(centerX + offset.value.x, centerY + offset.value.y)
@@ -176,7 +199,7 @@ export default {
           image.value = img
           imageWidth.value = img.width
           imageHeight.value = img.height
-          drawImage()
+          resetView() // Use resetView instead of drawImage
         }
         img.src = e.target.result
       }
@@ -275,7 +298,9 @@ export default {
 
     onMounted(() => {
       ctx.value = canvas.value.getContext('2d')
-      window.addEventListener('resize', drawImage)
+      window.addEventListener('resize', () => {
+        if (image.value) resetView()
+      })
     })
 
     return {
@@ -300,7 +325,9 @@ export default {
       handleResize,
       saveImage,
       getRgbString,
-      formatColorSpace
+      formatColorSpace,
+      resetView,
+      drawImage
     }
   }
 }
@@ -310,20 +337,24 @@ export default {
 .image-editor {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
   height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
 .toolbar {
   display: flex;
   gap: 1rem;
   align-items: center;
+  padding: 0.5rem;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ccc;
 }
 
 .tool-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .tool-buttons button {
@@ -345,10 +376,9 @@ export default {
 
 .canvas-container {
   flex: 1;
-  border: 1px solid #ccc;
-  overflow: hidden;
-  background: #f5f5f5;
   position: relative;
+  overflow: hidden;
+  background: #f0f0f0;
 }
 
 canvas {
@@ -405,4 +435,5 @@ canvas {
   padding-top: 0.5rem;
   border-top: 1px solid #eee;
 }
+</style>
 </style>

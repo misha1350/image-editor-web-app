@@ -83,7 +83,33 @@
 
 **Result:** A web page with advanced tools for analyzing and working with color.
 
-**Tips:**
+(task 4 was optional, so we can move onto:)
 
-*   Documentation: Add links to the official documentation of the components and algorithms used.
-*   Separation into pages: There should be a separate page for each task (1, 2, 3).
+## Task 5: Gradation Transformations
+
+**Goal:** Study the calculation and construction of a histogram, and implement gradation correction.
+
+**Steps:**
+
+1.  **Histogram:**
+    *   Calculation and construction of a histogram for each of the colors (RGB).
+    *   Displaying histograms on a square graph (you can use a library or draw `line`, `polyline` in `svg`).
+2.  **"Curves" Tool:**
+    *   Implementation via a dialog window (like scaling).
+3.  **Curve Adjustment:**
+    *   Fields for entering input and output values for two points (two pairs of fields).
+    *   Range of valid values: 0-255.
+    *   Initial values: 0;0 and 255;255.
+    *   Check: The input value of the first point cannot be greater than or equal to the input value of the second point.
+    *   Displaying points on a graph with histograms, connecting them with a line, adding horizontal lines to the right and left of the points.
+4.  **Gradation Correction:**
+    *   Creating a look-up-table (LUT) based on the values described by straight lines.
+    *   Using LUT to set new values in the image data array.
+5.  **Preview:**
+    *   Checkbox to enable/disable correction preview.
+6.  **Control:**
+    *   Buttons: "Apply", "Reset", "Close".
+7.  **UI:**
+    *   Shift the position of the dialog box so that it overlaps the image less.
+
+**Result:** Adding gradation correction ("Curves") functionality to the existing web application.
