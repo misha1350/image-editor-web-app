@@ -8,7 +8,7 @@
         <button
           :class="{ active: activeTool === 'eyedropper' }"
           @click="activeTool = 'eyedropper'"
-          title="Пипетка: Кликните, чтобы выбрать цвет с изображения. Используйте Alt+Клик для второго цвета."
+          title="Пипетка: Кликните, чтобы выбрать цвет с изображения. Используйте Alt+Клик для выбора второго цвета."
         >
           Пипетка
         </button>
@@ -63,7 +63,8 @@
         <div class="color-sample" :style="{ backgroundColor: getRgbString(selectedColor) }">
           Цвет 1
         </div>
-        <div v-if="secondColor" class="color-sample" :style="{ backgroundColor: getRgbString(secondColor) }">
+        <!-- Второй цвет всегда отображается -->
+        <div class="color-sample" :style="{ backgroundColor: getRgbString(secondColor) }">
           Цвет 2
         </div>
       </div>
@@ -75,12 +76,14 @@
         <p v-if="colorSpaces">LCH: {{ formatColorSpace(colorSpaces.lch) }}</p>
         <p v-if="colorSpaces">OKLch: {{ formatColorSpace(colorSpaces.oklch) }}</p>
       </div>
-      <div v-if="secondColor" class="color-details">
+      <!-- Всегда показываем информацию по второму цвету и контрасту -->
+      <div class="color-details">
         <p>Цвет 2 - RGB: {{ secondColor.r }}, {{ secondColor.g }}, {{ secondColor.b }}</p>
-        <div v-if="contrastRatio" class="contrast-info">
-          <p>Коэффициент контрастности: {{ contrastRatio.toFixed(2) }}:1</p>
-          <p v-if="contrastRatio < 4.5" class="contrast-warning">
-            ⚠️ Недостаточный контраст (должен быть не менее 4.5:1)
+        <div class="contrast-info">
+          <p>
+            Контраст: {{ contrastRatio ? contrastRatio.toFixed(2) : 'N/A' }}:1
+            <span v-if="contrastRatio && contrastRatio >= 4.5">✅</span>
+            <span v-else-if="contrastRatio">⚠️ Недостаточный</span>
           </p>
         </div>
       </div>
@@ -135,6 +138,19 @@ export default {
     const offset = ref({ x: 0, y: 0 })
     const lastPos = ref({ x: 0, y: 0 })
 
+    // Инициализируем второй цвет по умолчанию как белый
+    const secondColor = ref({ r: 255, g: 255, b: 255, x: 0, y: 0 })
+    const selectedColor = ref(null)
+    const colorSpaces = ref(null)
+    const contrastRatio = computed(() => {
+      if (selectedColor.value && secondColor.value) {
+        return calculateContrastRatio(selectedColor.value, secondColor.value);
+      }
+      return null;
+    });
+
+    const hasImage = computed(() => !!image.value)
+
     const resetView = () => {
       if (!image.value || !canvas.value) return;
       
@@ -154,18 +170,6 @@ export default {
       drawImage();
     }
     
-    const selectedColor = ref(null)
-    const colorSpaces = ref(null)
-    const secondColor = ref(null);
-    const contrastRatio = computed(() => {
-      if (selectedColor.value && secondColor.value) {
-        return calculateContrastRatio(selectedColor.value, secondColor.value);
-      }
-      return null;
-    });
-
-    const hasImage = computed(() => !!image.value)
-
     const drawImage = () => {
       if (!image.value || !ctx.value || !canvas.value) return;
       
