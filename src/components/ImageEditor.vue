@@ -28,6 +28,13 @@
         </button>
         <button
           v-if="hasImage"
+          @click="showCurvesModal = true"
+          title="Градационная коррекция: Настройка кривых для коррекции цветов"
+        >
+          Кривые
+        </button>
+        <button
+          v-if="hasImage"
           @click="saveImage"
           title="Сохранить: Скачать текущее изображение"
         >
@@ -97,6 +104,16 @@
       @close="showResizeModal = false"
       @resize="handleResize"
     />
+
+    <CurvesModal
+      v-if="hasImage"
+      :show="showCurvesModal"
+      :image-data="currentImageData"
+      @close="showCurvesModal = false"
+      @preview="handleCurvesPreview"
+      @apply="handleCurvesApply"
+      @reset-preview="resetCurvesPreview"
+    />
   </div>
 </template>
 
@@ -104,6 +121,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { getRgbColorSpaces } from '../utils/colorSpaces'
 import ResizeModal from './ResizeModal.vue'
+import CurvesModal from './CurvesModal.vue'
 
 function getLuminance(r, g, b) {
   const [rs, gs, bs] = [r, g, b].map(c => {
@@ -122,7 +140,7 @@ function calculateContrastRatio(color1, color2) {
 }
 
 export default {
-  components: { ResizeModal },
+  components: { ResizeModal, CurvesModal },
   
   setup() {
     const canvas = ref(null)
@@ -134,6 +152,7 @@ export default {
     const scale = ref(1)
     const activeTool = ref('eyedropper')
     const showResizeModal = ref(false)
+    const showCurvesModal = ref(false)
     const isDragging = ref(false)
     const offset = ref({ x: 0, y: 0 })
     const lastPos = ref({ x: 0, y: 0 })
@@ -150,6 +169,8 @@ export default {
     });
 
     const hasImage = computed(() => !!image.value)
+    const currentImageData = ref(null)
+    const originalImageData = ref(null)
 
     const resetView = () => {
       if (!image.value || !canvas.value) return;
@@ -192,6 +213,21 @@ export default {
         Math.round(scaledWidth),
         Math.round(scaledHeight)
       );
+
+      // Store current image data for curves tool
+      currentImageData.value = ctx.value.getImageData(
+        x,
+        y,
+        Math.round(scaledWidth),
+        Math.round(scaledHeight)
+      );
+      if (!originalImageData.value) {
+        originalImageData.value = new ImageData(
+          new Uint8ClampedArray(currentImageData.value.data),
+          currentImageData.value.width,
+          currentImageData.value.height
+        );
+      }
     }
 
     const handleFileUpload = (event) => {
@@ -306,6 +342,49 @@ export default {
         .join(', ')
     }
 
+    const handleCurvesPreview = (previewImageData) => {
+      if (!ctx.value || !canvas.value) return;
+      
+      const container = canvas.value.parentElement;
+      const scaledWidth = imageWidth.value * scale.value;
+      const scaledHeight = imageHeight.value * scale.value;
+      const x = Math.round((container.clientWidth - scaledWidth) / 2) + offset.value.x;
+      const y = Math.round((container.clientHeight - scaledHeight) / 2) + offset.value.y;
+      
+      ctx.value.putImageData(previewImageData, x, y);
+    }
+
+    const handleCurvesApply = () => {
+      if (!ctx.value || !canvas.value) return;
+      
+      // Update the image with current canvas state
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = imageWidth.value;
+      tempCanvas.height = imageHeight.value;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(canvas.value, 0, 0);
+      
+      const newImage = new Image();
+      newImage.onload = () => {
+        image.value = newImage;
+        originalImageData.value = null; // Reset original data for new changes
+        drawImage();
+      };
+      newImage.src = tempCanvas.toDataURL();
+    }
+
+    const resetCurvesPreview = () => {
+      if (originalImageData.value) {
+        const container = canvas.value.parentElement;
+        const scaledWidth = imageWidth.value * scale.value;
+        const scaledHeight = imageHeight.value * scale.value;
+        const x = Math.round((container.clientWidth - scaledWidth) / 2) + offset.value.x;
+        const y = Math.round((container.clientHeight - scaledHeight) / 2) + offset.value.y;
+        
+        ctx.value.putImageData(originalImageData.value, x, y);
+      }
+    }
+
     onMounted(() => {
       ctx.value = canvas.value.getContext('2d')
       const resizeObserver = new ResizeObserver(() => {
@@ -321,11 +400,13 @@ export default {
       selectedColor,
       colorSpaces,
       showResizeModal,
+      showCurvesModal,
       imageWidth,
       imageHeight,
       hasImage,
       secondColor,
       contrastRatio,
+      currentImageData,
       
       handleFileUpload,
       handleMouseDown,
@@ -336,7 +417,10 @@ export default {
       getRgbString,
       formatColorSpace,
       resetView,
-      drawImage
+      drawImage,
+      handleCurvesPreview,
+      handleCurvesApply,
+      resetCurvesPreview
     }
   }
 }
