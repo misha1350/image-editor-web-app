@@ -360,6 +360,34 @@ export default {
   border-bottom: 1px solid #ccc;
 }
 
+.toolbar input {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 0 4px;
+}
+
+.toolbar button {
+  padding: 8px 16px; 
+  border: 1px solid #ddd; 
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 0 4px;
+}
+
+.toolbar button:hover {
+  background: #f5f5f5;
+}
+
+.toolbar button.active {
+  background: #e6e6e6;
+}
+
 .canvas-container {
   flex: 1;
   position: relative;

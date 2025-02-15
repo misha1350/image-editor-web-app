@@ -1,11 +1,11 @@
 <template>
   <div v-if="show" class="modal-overlay">
     <div class="modal">
-      <h3>Resize Image</h3>
+      <h3>Изменить размер изображения</h3>
       
       <div class="form-group">
         <label>
-          Width:
+          Ширина:
           <input 
             type="number" 
             v-model="width" 
@@ -17,7 +17,7 @@
 
       <div class="form-group">
         <label>
-          Height:
+          Высота:
           <input 
             type="number" 
             v-model="height"
@@ -33,13 +33,13 @@
             type="checkbox" 
             v-model="maintainAspectRatio"
           />
-          Maintain Aspect Ratio
+          Сохранять пропорции
         </label>
       </div>
 
       <div class="button-group">
-        <button @click="handleResize">Resize</button>
-        <button @click="$emit('close')">Cancel</button>
+        <button @click="handleResize">Изменить размер</button>
+        <button @click="$emit('close')">Отмена</button>
       </div>
     </div>
   </div>
