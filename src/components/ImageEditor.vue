@@ -35,6 +35,13 @@
         </button>
         <button
           v-if="hasImage"
+          @click="showFilterModal = true"
+          title="Фильтрация: Применить фильтр к изображению"
+        >
+          Фильтр
+        </button>
+        <button
+          v-if="hasImage"
           @click="saveImage"
           title="Сохранить: Скачать текущее изображение"
         >
@@ -114,6 +121,16 @@
       @apply="handleCurvesApply"
       @reset-preview="resetCurvesPreview"
     />
+
+    <FilterModal
+      v-if="hasImage"
+      :show="showFilterModal"
+      :image-data="currentImageData"
+      @close="showFilterModal = false"
+      @preview="handleCurvesPreview"
+      @apply="handleCurvesApply"
+      @reset-preview="resetCurvesPreview"
+    />
   </div>
 </template>
 
@@ -122,6 +139,7 @@ import { ref, onMounted, computed } from 'vue'
 import { getRgbColorSpaces } from '../utils/colorSpaces'
 import ResizeModal from './ResizeModal.vue'
 import CurvesModal from './CurvesModal.vue'
+import FilterModal from './FilterModal.vue'
 
 function getLuminance(r, g, b) {
   const [rs, gs, bs] = [r, g, b].map(c => {
@@ -140,7 +158,7 @@ function calculateContrastRatio(color1, color2) {
 }
 
 export default {
-  components: { ResizeModal, CurvesModal },
+  components: { ResizeModal, CurvesModal, FilterModal },
   
   setup() {
     const canvas = ref(null)
@@ -153,6 +171,7 @@ export default {
     const activeTool = ref('eyedropper')
     const showResizeModal = ref(false)
     const showCurvesModal = ref(false)
+    const showFilterModal = ref(false)
     const isDragging = ref(false)
     const offset = ref({ x: 0, y: 0 })
     const lastPos = ref({ x: 0, y: 0 })
@@ -401,6 +420,7 @@ export default {
       colorSpaces,
       showResizeModal,
       showCurvesModal,
+      showFilterModal,
       imageWidth,
       imageHeight,
       hasImage,

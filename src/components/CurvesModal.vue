@@ -150,7 +150,7 @@ export default {
   
   methods: {
     calculateHistograms() {
-      // Reset histograms
+      // Сброс гистограмм
       for (let i = 0; i < 256; i++) {
         this.histograms.red[i] = 0
         this.histograms.green[i] = 0
@@ -164,7 +164,7 @@ export default {
         this.histograms.blue[data[i + 2]]++
       }
       
-      // Normalize histograms
+      // Нормализация
       const maxCount = Math.max(
         ...Object.values(this.histograms).flat()
       )
@@ -193,18 +193,18 @@ export default {
       const p1 = this.points[0]
       const p2 = this.points[1]
       
-      // Left segment
+      // Левый сегмент
       for (let i = 0; i <= p1.input; i++) {
         lut[i] = p1.output
       }
       
-      // Middle segment
+      // Средний сегмент
       const slope = (p2.output - p1.output) / (p2.input - p1.input)
       for (let i = p1.input + 1; i < p2.input; i++) {
         lut[i] = Math.round(p1.output + slope * (i - p1.input))
       }
       
-      // Right segment
+      // Правый сегмент
       for (let i = p2.input; i < 256; i++) {
         lut[i] = p2.output
       }
