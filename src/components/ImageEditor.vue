@@ -135,7 +135,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { getRgbColorSpaces } from '../utils/colorSpaces'
 import ResizeModal from './ResizeModal.vue'
 import CurvesModal from './CurvesModal.vue'
@@ -175,6 +175,19 @@ export default {
     const isDragging = ref(false)
     const offset = ref({ x: 0, y: 0 })
     const lastPos = ref({ x: 0, y: 0 })
+    
+    // Кэш для оптимизации
+    const canvasRect = ref(null)
+    let rafId = null
+    let lastPickedPos = { x: -1, y: -1 }
+
+    const debouncedDraw = (() => {
+      let timeout
+      return () => {
+        if (timeout) cancelAnimationFrame(timeout)
+        timeout = requestAnimationFrame(() => drawImage())
+      }
+    })()
 
     // Инициализируем второй цвет по умолчанию как белый
     const secondColor = ref({ r: 255, g: 255, b: 255, x: 0, y: 0 })
@@ -211,41 +224,49 @@ export default {
     }
     
     const drawImage = () => {
-      if (!image.value || !ctx.value || !canvas.value) return;
+      if (!image.value || !ctx.value || !canvas.value) return
       
-      const container = canvas.value.parentElement;
+      const container = canvas.value.parentElement
       
-      canvas.value.width = container.clientWidth;
-      canvas.value.height = container.clientHeight;
+      // Обновляем размеры canvas только если они изменились
+      if (canvas.value.width !== container.clientWidth || 
+          canvas.value.height !== container.clientHeight) {
+        canvas.value.width = container.clientWidth
+        canvas.value.height = container.clientHeight
+      }
       
-      const scaledWidth = imageWidth.value * scale.value;
-      const scaledHeight = imageHeight.value * scale.value;
+      const scaledWidth = imageWidth.value * scale.value
+      const scaledHeight = imageHeight.value * scale.value
       
-      const x = Math.round((container.clientWidth - scaledWidth) / 2) + offset.value.x;
-      const y = Math.round((container.clientHeight - scaledHeight) / 2) + offset.value.y;
+      const x = Math.round((container.clientWidth - scaledWidth) / 2) + offset.value.x
+      const y = Math.round((container.clientHeight - scaledHeight) / 2) + offset.value.y
       
-      ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
+      ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height)
       ctx.value.drawImage(
         image.value,
         x,
         y,
         Math.round(scaledWidth),
         Math.round(scaledHeight)
-      );
+      )
 
-      // Store current image data for curves tool
-      currentImageData.value = ctx.value.getImageData(
-        x,
-        y,
-        Math.round(scaledWidth),
-        Math.round(scaledHeight)
-      );
-      if (!originalImageData.value) {
-        originalImageData.value = new ImageData(
-          new Uint8ClampedArray(currentImageData.value.data),
-          currentImageData.value.width,
-          currentImageData.value.height
-        );
+      // Обновляем кэш только когда необходимо
+      if (!currentImageData.value || 
+          currentImageData.value.width !== Math.round(scaledWidth) || 
+          currentImageData.value.height !== Math.round(scaledHeight)) {
+        currentImageData.value = ctx.value.getImageData(
+          x,
+          y,
+          Math.round(scaledWidth),
+          Math.round(scaledHeight)
+        )
+        if (!originalImageData.value) {
+          originalImageData.value = new ImageData(
+            new Uint8ClampedArray(currentImageData.value.data),
+            currentImageData.value.width,
+            currentImageData.value.height
+          )
+        }
       }
     }
 
@@ -283,9 +304,9 @@ export default {
     const handleMouseMove = (e) => {
       if (!canvas.value) return
 
-      if (activeTool.value === 'eyedropper') {
-        pickColor(e)
-      } else if (isDragging.value && activeTool.value === 'hand') {
+      if (isDragging.value && activeTool.value === 'hand') {
+        e.preventDefault()
+        
         const deltaX = e.clientX - lastPos.value.x
         const deltaY = e.clientY - lastPos.value.y
         
@@ -296,16 +317,28 @@ export default {
         
         lastPos.value = { x: e.clientX, y: e.clientY }
         
-        drawImage()
+        debouncedDraw()
+      } else if (activeTool.value === 'eyedropper') {
+        // Обновляем цвет только если курсор переместился на новый пиксель
+        const x = Math.round(e.clientX - canvasRect.value.left)
+        const y = Math.round(e.clientY - canvasRect.value.top)
+        
+        if (x !== lastPickedPos.x || y !== lastPickedPos.y) {
+          lastPickedPos = { x, y }
+          pickColor(e)
+        }
       }
     }
 
     const pickColor = (event) => {
       if (!ctx.value) return
       
-      const rect = canvas.value.getBoundingClientRect()
-      const x = event.clientX - rect.left
-      const y = event.clientY - rect.top
+      if (!canvasRect.value) {
+        canvasRect.value = canvas.value.getBoundingClientRect()
+      }
+      
+      const x = event.clientX - canvasRect.value.left
+      const y = event.clientY - canvasRect.value.top
       
       const pixel = ctx.value.getImageData(x, y, 1, 1).data
       const color = {
@@ -314,13 +347,16 @@ export default {
         b: pixel[2],
         x: Math.round(x),
         y: Math.round(y)
-      };
+      }
 
       if (event.altKey) {
-        secondColor.value = color;
+        secondColor.value = color
       } else {
-        selectedColor.value = color;
-        colorSpaces.value = getRgbColorSpaces(pixel[0], pixel[1], pixel[2]);
+        selectedColor.value = color
+        // Вычисляем цветовые пространства только при необходимости
+        if (selectedColor.value && !colorSpaces.value) {
+          colorSpaces.value = getRgbColorSpaces(pixel[0], pixel[1], pixel[2])
+        }
       }
     }
 
@@ -376,7 +412,7 @@ export default {
     const handleCurvesApply = () => {
       if (!ctx.value || !canvas.value) return;
       
-      // Update the image with current canvas state
+      // Обновление изображения с примененными кривыми
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = imageWidth.value;
       tempCanvas.height = imageHeight.value;
@@ -386,7 +422,7 @@ export default {
       const newImage = new Image();
       newImage.onload = () => {
         image.value = newImage;
-        originalImageData.value = null; // Reset original data for new changes
+        originalImageData.value = null; // Сброс кэша для нового изображения
         drawImage();
       };
       newImage.src = tempCanvas.toDataURL();
@@ -405,11 +441,26 @@ export default {
     }
 
     onMounted(() => {
-      ctx.value = canvas.value.getContext('2d')
+      ctx.value = canvas.value.getContext('2d', { willReadFrequently: true })
+      canvasRect.value = canvas.value.getBoundingClientRect()
+      
       const resizeObserver = new ResizeObserver(() => {
-        if (image.value) drawImage();
-      });
-      resizeObserver.observe(canvas.value.parentElement);
+        canvasRect.value = canvas.value.getBoundingClientRect()
+        if (image.value) debouncedDraw()
+      })
+      
+      resizeObserver.observe(canvas.value.parentElement)
+      
+      // Обновляем canvasRect при скролле
+      window.addEventListener('scroll', () => {
+        canvasRect.value = canvas.value.getBoundingClientRect()
+      }, { passive: true })
+    })
+
+    onUnmounted(() => {
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
     })
 
     return {
