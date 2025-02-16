@@ -1,29 +1,60 @@
-# image-editor-web-app
+# Веб-приложение для редактирования изображений
 
-This template should help get you started developing with Vue 3 in Vite.
+Это веб-приложение предоставляет базовые функции редактирования изображений, включая:
 
-## Recommended IDE Setup
+-   Загрузка и отображение изображений
+-   Масштабирование
+-   Выбор цвета с информацией о цветовом пространстве
+-   Изменение размера изображения
+-   Регулировка кривых
+-   Наложение фильтров
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Рекомендуемая настройка IDE
 
-## Customize configuration
+[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (и отключите Vetur).
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## Настройка проекта
 
-## Project Setup
+1.  Клонируйте репозиторий.
+2.  Установите зависимости:
 
-```sh
-npm install
-```
+    ```sh
+    npm install
+    ```
+3.  Запустите сервер разработки:
 
-### Compile and Hot-Reload for Development
+    ```sh
+    npm run dev
+    ```
 
-```sh
-npm run dev
-```
+Откройте браузер и перейдите по адресу, указанному в терминале (обычно `http://localhost:5173/`).
+# Веб-приложение для редактирования изображений
 
-### Compile and Minify for Production
+Это веб-приложение предоставляет базовые функции редактирования изображений, включая:
 
-```sh
-npm run build
-```
+-   Загрузка и отображение изображений
+-   Масштабирование
+-   Выбор цвета с информацией о цветовом пространстве
+-   Изменение размера изображения
+-   Регулировка кривых
+-   Фильтрация
+
+## Рекомендуемая настройка IDE
+
+[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (и отключите Vetur).
+
+## Настройка проекта
+
+1.  Клонируйте репозиторий.
+2.  Установите зависимости:
+
+    ```sh
+    npm install
+    ```
+3.  Запустите сервер разработки:
+
+    ```sh
+    npm run dev
+    ```
+
+Откройте браузер и перейдите по адресу, указанному в терминале (обычно `http://localhost:5173/`).
