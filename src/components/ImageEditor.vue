@@ -135,11 +135,11 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, onUnmounted } from 'vue'
-import { getRgbColorSpaces } from '../utils/colorSpaces'
-import ResizeModal from './ResizeModal.vue'
-import CurvesModal from './CurvesModal.vue'
-import FilterModal from './FilterModal.vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { getRgbColorSpaces } from '../utils/colorSpaces';
+import ResizeModal from './ResizeModal.vue';
+import CurvesModal from './CurvesModal.vue';
+import FilterModal from './FilterModal.vue';
 
 function getLuminance(r, g, b) {
   const [rs, gs, bs] = [r, g, b].map(c => {
@@ -161,38 +161,41 @@ export default {
   components: { ResizeModal, CurvesModal, FilterModal },
   
   setup() {
-    const canvas = ref(null)
-    const ctx = ref(null)
-    const image = ref(null)
-    const imageWidth = ref(0)
-    const imageHeight = ref(0)
+    const canvas = ref(null);
+    const ctx = ref(null);
+    const image = ref(null);
+    const imageWidth = ref(0);
+    const imageHeight = ref(0);
     
-    const scale = ref(1)
-    const activeTool = ref('eyedropper')
-    const showResizeModal = ref(false)
-    const showCurvesModal = ref(false)
-    const showFilterModal = ref(false)
-    const isDragging = ref(false)
-    const offset = ref({ x: 0, y: 0 })
-    const lastPos = ref({ x: 0, y: 0 })
+    const scale = ref(1);
+    const activeTool = ref('eyedropper');
+    const showResizeModal = ref(false);
+    const showCurvesModal = ref(false);
+    const showFilterModal = ref(false);
+    const isDragging = ref(false);
+    const offset = ref({ x: 0, y: 0 });
+    const lastPos = ref({ x: 0, y: 0 });
     
-    // Кэш для оптимизации
-    const canvasRect = ref(null)
-    let rafId = null
-    let lastPickedPos = { x: -1, y: -1 }
+    // Оптимизация пипетки
+    const eyedropperThrottleInterval = ref(null);
+    const canvasRect = ref(null);
+    let rafId = null;
+    let lastPickedPos = { x: -1, y: -1 };
+    let lastThrottledPick = 0;
+    const THROTTLE_MS = 66; // ~15 fps
 
     const debouncedDraw = (() => {
-      let timeout
+      let timeout;
       return () => {
-        if (timeout) cancelAnimationFrame(timeout)
-        timeout = requestAnimationFrame(() => drawImage())
-      }
-    })()
+        if (timeout) cancelAnimationFrame(timeout);
+        timeout = requestAnimationFrame(() => drawImage());
+      };
+    })();
 
     // Инициализируем второй цвет по умолчанию как белый
-    const secondColor = ref({ r: 255, g: 255, b: 255, x: 0, y: 0 })
-    const selectedColor = ref(null)
-    const colorSpaces = ref(null)
+    const secondColor = ref({ r: 255, g: 255, b: 255, x: 0, y: 0 });
+    const selectedColor = ref(null);
+    const colorSpaces = ref(null);
     const contrastRatio = computed(() => {
       if (selectedColor.value && secondColor.value) {
         return calculateContrastRatio(selectedColor.value, secondColor.value);
@@ -200,9 +203,9 @@ export default {
       return null;
     });
 
-    const hasImage = computed(() => !!image.value)
-    const currentImageData = ref(null)
-    const originalImageData = ref(null)
+    const hasImage = computed(() => !!image.value);
+    const currentImageData = ref(null);
+    const originalImageData = ref(null);
 
     const resetView = () => {
       if (!image.value || !canvas.value) return;
@@ -224,31 +227,31 @@ export default {
     }
     
     const drawImage = () => {
-      if (!image.value || !ctx.value || !canvas.value) return
+      if (!image.value || !ctx.value || !canvas.value) return;
       
-      const container = canvas.value.parentElement
+      const container = canvas.value.parentElement;
       
       // Обновляем размеры canvas только если они изменились
       if (canvas.value.width !== container.clientWidth || 
           canvas.value.height !== container.clientHeight) {
-        canvas.value.width = container.clientWidth
-        canvas.value.height = container.clientHeight
+        canvas.value.width = container.clientWidth;
+        canvas.value.height = container.clientHeight;
       }
       
-      const scaledWidth = imageWidth.value * scale.value
-      const scaledHeight = imageHeight.value * scale.value
+      const scaledWidth = imageWidth.value * scale.value;
+      const scaledHeight = imageHeight.value * scale.value;
       
-      const x = Math.round((container.clientWidth - scaledWidth) / 2) + offset.value.x
-      const y = Math.round((container.clientHeight - scaledHeight) / 2) + offset.value.y
+      const x = Math.round((container.clientWidth - scaledWidth) / 2) + offset.value.x;
+      const y = Math.round((container.clientHeight - scaledHeight) / 2) + offset.value.y;
       
-      ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height)
+      ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
       ctx.value.drawImage(
         image.value,
         x,
         y,
         Math.round(scaledWidth),
         Math.round(scaledHeight)
-      )
+      );
 
       // Обновляем кэш только когда необходимо
       if (!currentImageData.value || 
@@ -259,122 +262,125 @@ export default {
           y,
           Math.round(scaledWidth),
           Math.round(scaledHeight)
-        )
+        );
         if (!originalImageData.value) {
           originalImageData.value = new ImageData(
             new Uint8ClampedArray(currentImageData.value.data),
             currentImageData.value.width,
             currentImageData.value.height
-          )
+          );
         }
       }
     }
 
     const handleFileUpload = (event) => {
-      const file = event.target.files[0]
-      if (!file) return
+      const file = event.target.files[0];
+      if (!file) return;
 
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (e) => {
-        const img = new Image()
+        const img = new Image();
         img.onload = () => {
-          image.value = img
-          imageWidth.value = img.width
-          imageHeight.value = img.height
-          resetView()
+          image.value = img;
+          imageWidth.value = img.width;
+          imageHeight.value = img.height;
+          resetView();
         }
-        img.src = e.target.result
+        img.src = e.target.result;
       }
-      reader.readAsDataURL(file)
+      reader.readAsDataURL(file);
     }
 
     const handleMouseDown = (e) => {
       if (activeTool.value === 'hand') {
-        isDragging.value = true
-        lastPos.value = { x: e.clientX, y: e.clientY }
+        isDragging.value = true;
+        lastPos.value = { x: e.clientX, y: e.clientY };
       } else if (activeTool.value === 'eyedropper') {
-        pickColor(e)
+        pickColor(e);
       }
     }
 
     const handleMouseUp = () => {
-      isDragging.value = false
+      isDragging.value = false;
     }
 
     const handleMouseMove = (e) => {
-      if (!canvas.value) return
+      if (!canvas.value) return;
 
       if (isDragging.value && activeTool.value === 'hand') {
-        e.preventDefault()
+        e.preventDefault();
         
-        const deltaX = e.clientX - lastPos.value.x
-        const deltaY = e.clientY - lastPos.value.y
+        const deltaX = e.clientX - lastPos.value.x;
+        const deltaY = e.clientY - lastPos.value.y;
         
         offset.value = {
           x: offset.value.x + deltaX,
           y: offset.value.y + deltaY
-        }
+        };
         
-        lastPos.value = { x: e.clientX, y: e.clientY }
+        lastPos.value = { x: e.clientX, y: e.clientY };
         
-        debouncedDraw()
+        debouncedDraw();
       } else if (activeTool.value === 'eyedropper') {
-        // Обновляем цвет только если курсор переместился на новый пиксель
-        const x = Math.round(e.clientX - canvasRect.value.left)
-        const y = Math.round(e.clientY - canvasRect.value.top)
-        
-        if (x !== lastPickedPos.x || y !== lastPickedPos.y) {
-          lastPickedPos = { x, y }
-          pickColor(e)
+        // Throttle the color picking to ~15fps
+        const now = Date.now();
+        if (now - lastThrottledPick >= THROTTLE_MS) {
+          lastThrottledPick = now;
+          pickColor(e);
         }
       }
     }
 
     const pickColor = (event) => {
-      if (!ctx.value) return
+      if (!ctx.value || activeTool.value !== 'eyedropper') return;
       
-      if (!canvasRect.value) {
-        canvasRect.value = canvas.value.getBoundingClientRect()
-      }
+      // Обновляем canvasRect при каждом пике для точности
+      canvasRect.value = canvas.value.getBoundingClientRect();
       
-      const x = event.clientX - canvasRect.value.left
-      const y = event.clientY - canvasRect.value.top
+      const x = Math.round(event.clientX - canvasRect.value.left);
+      const y = Math.round(event.clientY - canvasRect.value.top);
       
-      const pixel = ctx.value.getImageData(x, y, 1, 1).data
-      const color = {
-        r: pixel[0],
-        g: pixel[1],
-        b: pixel[2],
-        x: Math.round(x),
-        y: Math.round(y)
-      }
+      // Проверяем, находится ли курсор в пределах изображения
+      const container = canvas.value.parentElement;
+      const scaledWidth = imageWidth.value * scale.value;
+      const scaledHeight = imageHeight.value * scale.value;
+      const imgX = Math.round((container.clientWidth - scaledWidth) / 2) + offset.value.x;
+      const imgY = Math.round((container.clientHeight - scaledHeight) / 2) + offset.value.y;
+      
+      if (x >= imgX && x < imgX + scaledWidth && y >= imgY && y < imgY + scaledHeight) {
+        const pixel = ctx.value.getImageData(x, y, 1, 1).data;
+        const color = {
+          r: pixel[0],
+          g: pixel[1],
+          b: pixel[2],
+          x: x,
+          y: y
+        };
 
-      if (event.altKey) {
-        secondColor.value = color
-      } else {
-        selectedColor.value = color
-        // Вычисляем цветовые пространства только при необходимости
-        if (selectedColor.value && !colorSpaces.value) {
-          colorSpaces.value = getRgbColorSpaces(pixel[0], pixel[1], pixel[2])
+        if (event.altKey) {
+          secondColor.value = color;
+        } else {
+          selectedColor.value = color;
+          colorSpaces.value = getRgbColorSpaces(pixel[0], pixel[1], pixel[2]);
         }
       }
     }
 
     const handleResize = ({ width, height }) => {
-      const tempCanvas = document.createElement('canvas')
-      tempCanvas.width = width
-      tempCanvas.height = height
-      const tempCtx = tempCanvas.getContext('2d')
-      tempCtx.drawImage(image.value, 0, 0, width, height)
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(image.value, 0, 0, width, height);
       
-      const newImage = new Image()
+      const newImage = new Image();
       newImage.onload = () => {
-        image.value = newImage
-        imageWidth.value = width
-        imageHeight.value = height
-        drawImage()
+        image.value = newImage;
+        imageWidth.value = width;
+        imageHeight.value = height;
+        drawImage();
       }
-      newImage.src = tempCanvas.toDataURL()
+      newImage.src = tempCanvas.toDataURL();
     }
 
     const saveImage = () => {
@@ -394,7 +400,7 @@ export default {
     const formatColorSpace = (space) => {
       return Object.entries(space)
         .map(([key, value]) => `${key}: ${value.toFixed(2)}`)
-        .join(', ')
+        .join(', ');
     }
 
     const handleCurvesPreview = (previewImageData) => {
@@ -441,25 +447,25 @@ export default {
     }
 
     onMounted(() => {
-      ctx.value = canvas.value.getContext('2d', { willReadFrequently: true })
-      canvasRect.value = canvas.value.getBoundingClientRect()
+      ctx.value = canvas.value.getContext('2d', { willReadFrequently: true });
+      canvasRect.value = canvas.value.getBoundingClientRect();
       
       const resizeObserver = new ResizeObserver(() => {
-        canvasRect.value = canvas.value.getBoundingClientRect()
-        if (image.value) debouncedDraw()
-      })
+        canvasRect.value = canvas.value.getBoundingClientRect();
+        if (image.value) debouncedDraw();
+      });
       
-      resizeObserver.observe(canvas.value.parentElement)
+      resizeObserver.observe(canvas.value.parentElement);
       
       // Обновляем canvasRect при скролле
       window.addEventListener('scroll', () => {
-        canvasRect.value = canvas.value.getBoundingClientRect()
-      }, { passive: true })
+        canvasRect.value = canvas.value.getBoundingClientRect();
+      }, { passive: true });
     })
 
     onUnmounted(() => {
       if (rafId) {
-        cancelAnimationFrame(rafId)
+        cancelAnimationFrame(rafId);
       }
     })
 
