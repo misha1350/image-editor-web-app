@@ -1,10 +1,9 @@
 <template>
   <div class="image-editor">
     <div class="toolbar">
-      <input type="file" accept="image/*" @change="handleFileUpload" />
+      <div class="toolbar-group">
+        <input type="file" accept="image/*" @change="handleFileUpload" />
 
-      <!-- Кнопки инструментов -->
-      <div class="tool-buttons">
         <button
           :class="{ active: activeTool === 'eyedropper' }"
           @click="activeTool = 'eyedropper'"
@@ -54,11 +53,11 @@
         >
           Сбросить вид
         </button>
-      </div>
 
-      <div class="scale-control">
-        <input type="range" v-model="scale" min="0.1" max="3" step="0.1" @change="drawImage" />
-        <span>{{ Math.round(scale * 100) }}%</span>
+        <div class="scale-control">
+          <input type="range" v-model="scale" min="0.1" max="3" step="0.1" @change="drawImage" />
+          <span>{{ Math.round(scale * 100) }}%</span>
+        </div>
       </div>
     </div>
 
@@ -75,11 +74,10 @@
     <div v-if="selectedColor" class="color-info">
       <div class="color-samples">
         <div class="color-sample" :style="{ backgroundColor: getRgbString(selectedColor) }">
-          Цвет 1
+          Основной цвет
         </div>
-        <!-- Второй цвет всегда отображается -->
         <div class="color-sample" :style="{ backgroundColor: getRgbString(secondColor) }">
-          Цвет 2
+          Вторичный цвет
         </div>
       </div>
       <div class="color-details">
@@ -90,7 +88,6 @@
         <p v-if="colorSpaces">LCH: {{ formatColorSpace(colorSpaces.lch) }}</p>
         <p v-if="colorSpaces">OKLch: {{ formatColorSpace(colorSpaces.oklch) }}</p>
       </div>
-      <!-- Всегда показываем информацию по второму цвету и контрасту -->
       <div class="color-details">
         <p>Цвет 2 - RGB: {{ secondColor.r }}, {{ secondColor.g }}, {{ secondColor.b }}</p>
         <div class="contrast-info">
@@ -516,29 +513,37 @@ export default {
 
 .toolbar {
   flex: 0 0 auto;
-  padding: 8px;
+  padding: 4px 8px;
   background: #f5f5f5;
   border-bottom: 1px solid #ccc;
 }
 
-.toolbar input {
-  padding: 8px 16px;
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.toolbar input[type="file"] {
+  padding: 4px 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
   background: white;
   cursor: pointer;
   font-size: 14px;
-  margin: 0 4px;
+  height: 32px;
 }
 
 .toolbar button {
-  padding: 8px 16px; 
-  border: 1px solid #ddd; 
+  padding: 4px 12px;
+  border: 1px solid #ddd;
   border-radius: 4px;
   background: white;
   cursor: pointer;
   font-size: 14px;
-  margin: 0 4px;
+  height: 32px;
+  white-space: nowrap;
 }
 
 .toolbar button:hover {
@@ -547,6 +552,22 @@ export default {
 
 .toolbar button.active {
   background: #e6e6e6;
+}
+
+.scale-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.scale-control input[type="range"] {
+  width: 100px;
+}
+
+.scale-control span {
+  min-width: 48px;
+  font-size: 14px;
 }
 
 .canvas-container {
